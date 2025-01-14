@@ -1,0 +1,117 @@
+services:
+  backend:
+    image: danielsanchez18/prueba-enero13:latest
+    ports:
+      - "5000:5000"
+    environment:
+      PG_HOST: "postgres.docker"
+      PG_PORT: "5432"
+      PG_USER_FILE: /run/secrets/secrets_postgres_user
+      PG_PASSWORD_FILE: /run/secrets/secrets_postgres_password
+      PG_DB_FILE: /run/secrets/secrets_postgres_db
+      MONGO_HOST: "mongodb.docker"
+      MONGO_PORT: "27017"
+      MONGO_USER_FILE: /run/secrets/secrets_mongo_user
+      MONGO_PASSWORD_FILE: /run/secrets/secrets_mongo_password
+      MONGO_DB_NAME_FILE: /run/secrets/secrets_mongo_db
+    networks:
+      database:
+        aliases:
+          - backend.docker
+      proxy:
+        aliases:
+          - backend.docker
+    secrets:
+      - secrets_mongo_user
+      - secrets_mongo_password
+      - secrets_mongo_db
+      - secrets_postgres_user
+      - secrets_postgres_password
+      - secrets_postgres_db
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
+  mongodb:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME_FILE: /run/secrets/secrets_mongo_user
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/secrets_mongo_password
+      MONGO_INITDB_DATABASE_FILE: /run/secrets/secrets_mongo_db
+    ports:
+      - "127.0.0.1:27018:27017"
+    volumes:
+      - /home/database/persistent-data/mongodb:/data/db
+    networks:
+      database:
+        aliases:
+          - mongodb.docker
+    secrets:
+      - secrets_mongo_user
+      - secrets_mongo_password
+      - secrets_mongo_db
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role == database
+
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER_FILE: /run/secrets/secrets_postgres_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/secrets_postgres_password
+      POSTGRES_DB_FILE: /run/secrets/secrets_postgres_db
+    ports:
+      - "127.0.0.1:25432:5432"
+    networks:
+      database:
+        aliases:
+          - postgres.docker
+    volumes:
+      - /home/database/persistent-data/postgresdb:/var/lib/postgresql/data
+    secrets:
+      - secrets_postgres_user
+      - secrets_postgres_password
+      - secrets_postgres_db
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role == database
+    
+  ingress:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./images/nginx/ssl/certs:/etc/nginx/ssl
+      - ./images/nginx/vhost/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      proxy:
+        aliases:
+          - ingress.docker
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
+networks:
+  database:
+    driver: overlay
+  proxy:
+    driver: overlay
+
+secrets:
+  secrets_mongo_user:
+    file: ./secrets/secrets_mongo_users.txt
+  secrets_mongo_password:
+    file: ./secrets/secrets_mongo_password.txt
+  secrets_mongo_db:
+    file: ./secrets/secrets_mongo_db.txt
+  secrets_postgres_user:
+    file: ./secrets/secrets_postgres_users.txt
+  secrets_postgres_password:
+    file: ./secrets/secrets_postgres_password.txt
+  secrets_postgres_db:
+    file: ./secrets/secrets_postgres_db.txt
