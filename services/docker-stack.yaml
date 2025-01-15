@@ -28,6 +28,9 @@ services:
       - secrets_postgres_user
       - secrets_postgres_password
       - secrets_postgres_db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "https://127.0.0.1/healthz"]
+      interval: 30s
     deploy:
       placement:
         constraints:

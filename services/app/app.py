@@ -135,6 +135,10 @@ def update_user_postgres(id):
         return jsonify({"message": "Dato actualizado en Postgres"})
     else:
         return jsonify({"message": "Dato no encontrado"}), 404
+    
+@app.route('/healthz', methods=['GET'])
+def update_jenkins():
+    return jsonify({"status": "OK"})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
