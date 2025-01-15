@@ -1,0 +1,67 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_TAG = "${env.BUILD_ID}-${new Date().format('yyyy-MM-dd-HH-mm')}"
+    }
+
+    stages {
+
+        stage('Limpiar Workspace') {
+            steps {
+                sh 'rm -rf prueba-felipe-semana-11'
+            }
+        }
+
+        stage('Clone repository') {
+            steps {
+                sh '''
+                git clone https://github.com/EduarXavier/prueba-felipe-semana-11.git
+                '''
+            }
+        }
+
+        stage('Build Docker image') {
+            steps {
+                sh '''
+                docker build -t danielsanchez18/prueba-enero13:${IMAGE_TAG} prueba-felipe-semana-11/services/app/.
+                '''
+            }
+        }
+
+        stage('Login DockerHub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'DOCKER_CREDENTIALS', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    sh '''
+                    echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin >> /dev/null 2>&1
+                    '''
+                }
+            }
+        }
+
+        stage('Push DockerHub') {
+            steps {
+                sh '''
+                docker push danielsanchez18/prueba-enero13:${IMAGE_TAG}
+                '''
+            }
+        }
+
+        stage('Update service') {
+            steps {
+                sh '''
+                docker service update --image danielsanchez18/prueba-enero13:${IMAGE_TAG} gopenux_backend
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'La imagen fue construida y el servicio actualizado correctamente'
+        }
+        failure {
+            echo 'Hubo un error durante el proceso.'
+        }
+    }
+}
