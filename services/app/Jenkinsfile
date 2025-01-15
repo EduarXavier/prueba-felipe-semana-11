@@ -1,12 +1,15 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'TAG', defaultValue: 'latest', description: 'Tag de la imagen')
+    }
+
     environment {
-        IMAGE_TAG = "${env.BUILD_ID}-${new Date().format('yyyy-MM-dd-HH-mm')}"
+        IMAGE_TAG = "${params.TAG}"
     }
 
     stages {
-
         stage('Limpiar Workspace') {
             steps {
                 sh 'rm -rf prueba-felipe-semana-11'
