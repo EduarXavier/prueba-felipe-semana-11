@@ -1,6 +1,6 @@
 services:
   backend:
-    image: danielsanchez18/prueba-enero13:latest
+    image: danielsanchez18/prueba-enero13
     ports:
       - "5000:5000"
     environment:
@@ -28,13 +28,16 @@ services:
       - secrets_postgres_user
       - secrets_postgres_password
       - secrets_postgres_db
-    healthcheck:
-      test: ["CMD", "curl", "-f", "https://127.0.0.1/healthz"]
-      interval: 30s
     deploy:
       placement:
         constraints:
           - node.role == manager
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:5000/healthz"]
+        interval: 30s
+        retries: 3
+        start_period: 10s
+        timeout: 5s
 
   mongodb:
     image: mongo:latest
